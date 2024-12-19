@@ -4,6 +4,8 @@
 #include <gtk-3.0/gtk/gtk.h>
 #include </usr/include/gtk-3.0/gdk/gdk.h>
 
+GtkWidget *notebook;
+
 typedef struct {
     char *label;
     int sub_items;
@@ -21,11 +23,66 @@ menuButton menulist[] = {
 
 const int menuLimit = 7;
 
+void popup_about() {
+	GtkWidget *hello = gtk_message_dialog_new(
+			NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK, "When you smile it\nRain will fall!");
+
+	int response = gtk_dialog_run(GTK_DIALOG(hello));
+
+	gtk_widget_destroy(hello);
+}
 void close_window() { gtk_main_quit(); }
 
-void button_click(GtkWidget *button, gpointer data) {
-    g_print("Click");
+void close_tab(GtkWidget *button, gpointer data) {
+	int pg_num = gtk_notebook_page_num(GTK_NOTEBOOK(notebook), data);
+	gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), pg_num);
+	g_print("CLOSE TAB");
 }
+
+
+void add_tab (char *name) {
+	GtkWidget *textview = gtk_text_view_new();
+	GtkWidget *text = gtk_label_new(name);
+	GtkWidget *label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	GtkWidget *button = gtk_button_new_with_label("x");
+	gtk_widget_set_tooltip_text(button, "Close Tab");
+	gtk_box_pack_start(GTK_BOX(label), text, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(label), button, FALSE, FALSE, 0);
+	GtkWidget *scrollwindow = gtk_scrolled_window_new(NULL,NULL);
+	gtk_container_add(GTK_CONTAINER(scrollwindow), textview);
+
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrollwindow, label);
+	
+	g_signal_connect(GTK_WIDGET(button), "clicked", 
+			G_CALLBACK(close_tab),scrollwindow);
+	
+	gtk_widget_show_all(label);
+	gtk_widget_show_all(scrollwindow);
+}
+
+void button_click(GtkWidget *button, gpointer data) {
+	char *btn = (char*) data;
+
+	if(strcmp(btn, "New") == 0) {
+		add_tab("new_tab");
+		g_print("new_tab");
+	}
+	else if(strcmp(btn, "About") == 0) {
+		g_print("about");
+		popup_about();
+	}
+
+}
+
+void make_notebook(GtkWidget *vbox) {
+	notebook = gtk_notebook_new();
+
+	gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
+
+	add_tab("untitled ");
+}
+
+
 void make_menu(GtkWidget *menubox) {
     GtkWidget *menubar = gtk_menu_bar_new();
     for(int index = 0; index < menuLimit; index++) {
@@ -65,13 +122,15 @@ void make_window() {
 
     gtk_container_add(GTK_CONTAINER(window), vbox);
     make_menu(vbox);
-    input_field(vbox);
+    make_notebook(vbox);
     gtk_widget_show_all(window);
 }
+
 int main (int argc, char *argv[]) {
     gtk_init(&argc, &argv);
 
     make_window();
+
     gtk_main();
     
     return 0;
