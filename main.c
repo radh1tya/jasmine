@@ -22,6 +22,7 @@ menuButton menulist[] = {
     {"Help", 2, {"Contents", "About"}}};
 
 const int menuLimit = 7;
+int order = 2;
 
 void popup_about() {
 	GtkWidget *hello = gtk_message_dialog_new(
@@ -33,10 +34,45 @@ void popup_about() {
 }
 void close_window() { gtk_main_quit(); }
 
+void save_file (char * file_address) {
+}
+
+void save_as_dialog () {
+	GtkWidget *save_dialog = gtk_file_chooser_dialog_new("Save File", NULL, GTK_FILE_CHOOSER_ACTION_SAVE, "Cancel", GTK_RESPONSE_CANCEL, "Save", GTK_RESPONSE_ACCEPT, NULL);
+	GtkFileChooser *chooser = GTK_FILE_CHOOSER(save_dialog);
+	gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
+	int res = gtk_dialog_run(GTK_DIALOG(save_dialog));
+
+	if (res == GTK_RESPONSE_ACCEPT) {
+		char *file_address = gtk_file_chooser_get_filename(chooser);
+		save_file(file_address);
+		free(file_address);
+	}
+	gtk_widget_destroy(save_dialog);
+}
+void open_file (char * file_address) {
+	g_print("%s", file_address);
+}
+
+void open_file_dialog() {
+	GtkWidget *open_dialog = gtk_file_chooser_dialog_new("Open File",
+		NULL, GTK_FILE_CHOOSER_ACTION_OPEN, "Cancel", GTK_RESPONSE_CANCEL, "Open", GTK_RESPONSE_ACCEPT, NULL);
+	int res = gtk_dialog_run(GTK_DIALOG(open_dialog));
+	
+	if (res == GTK_RESPONSE_ACCEPT) {
+	GtkFileChooser * chooser = GTK_FILE_CHOOSER(open_dialog);
+	char *file_address = gtk_file_chooser_get_filename(chooser);
+	open_file(file_address);
+free(file_address);
+	}
+	gtk_widget_destroy(open_dialog);
+}
 void close_tab(GtkWidget *button, gpointer data) {
 	int pg_num = gtk_notebook_page_num(GTK_NOTEBOOK(notebook), data);
 	gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), pg_num);
 	g_print("CLOSE TAB");
+	order--;
+	g_print("%d", order);
 }
 
 
@@ -64,12 +100,24 @@ void button_click(GtkWidget *button, gpointer data) {
 	char *btn = (char*) data;
 
 	if(strcmp(btn, "New") == 0) {
-		add_tab("new_tab");
-		g_print("new_tab");
+		char *tab_name = g_strdup_printf("new_tab %d", order);
+		add_tab(tab_name);
+		g_free(tab_name);
+		order++;
+		g_print("new_tab %d", order);
 	}
 	else if(strcmp(btn, "About") == 0) {
 		g_print("about");
 		popup_about();
+	}
+	else if(strcmp(btn, "Open") == 0) {
+		open_file_dialog();
+	}
+	else if(strcmp(btn, "Save") == 0) {
+		save_file(NULL);
+	}
+	else if(strcmp(btn, "Save As") == 0) {
+		save_as_dialog();
 	}
 
 }
@@ -132,6 +180,5 @@ int main (int argc, char *argv[]) {
     make_window();
 
     gtk_main();
-    
     return 0;
 }
