@@ -6,11 +6,12 @@
 GtkWidget *notebook;
 
 typedef struct Pages{
-    GtkWidget *label;
-    GtkWidget *textview;
+    GtkWidget *text;
+    GtkWidget *address;
     GtkTextBuffer *buff;
     gboolean saved;
-}PgID;
+} PgID;
+
 const int SIZE = 10;
 PgID *book;
 
@@ -22,7 +23,7 @@ typedef struct {
 
 menuButton menulist[] = {
     {"File", 6, {"New", "Open", "Save", "Save As", "Close", "Quit"}},
-    {"Edit", 4, {"Cut", "Copy", "Paste", "Delete"}},
+    {"Edit", 4,{"Cut", "Copy", "Paste", "Delete"}},
     {"View", 4, {"Full Screen", "Larger Text", "Smaller Text", "Normal Size"}},
     {"Search", 4, {"Find", "Find Next", "Find Previous", "Replace"}},
     {"Tools", 1, {"Check Spelling"}},
@@ -87,56 +88,95 @@ void open_file_dialog() {
     gtk_widget_destroy(open_dialog);
 }
 
-void close_tab(GtkWidget *button, gpointer data) {
-    GtkWidget *page = (GtkWidget *)data;
-    int page_num = gtk_notebook_page_num(GTK_NOTEBOOK(notebook), page);
-    if (page_num != -1) {
-        if (book[page_num].saved || !gtk_text_buffer_get_modified(book[page_num].buff)) {
-            gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), page_num);
-            for (int i = page_num; i < order - 1; i++) {
-                book[i] = book[i+1];
-            }
-            order--;
-        } else {
-            save_as_dialog();
-        }
+int close_file_confirmation (int pg_num) {
+    GtkDialogFlags flags = GTK_DIALOG_MODAL;
+    int res;
+    GtkWidget *confirm_dialog = gtk_message_dialog_new(NULL, flags,
+						       GTK_MESSAGE_WARNING,
+						       GTK_BUTTONS_NONE,
+						       "Closing Unsaved Document");
+    gtk_dialog_add_buttons(GTK_DIALOG(confirm_dialog), "Close and Discard",
+			   GTK_RESPONSE_CLOSE,
+			   "Saved and Close",
+			   GTK_RESPONSE_ACCEPT,
+			   "Cancel",
+			   GTK_RESPONSE_CANCEL,
+			   NULL);
+    res = gtk_dialog_run(GTK_DIALOG(confirm_dialog));
+    int value = 2;
+    if(res == GTK_RESPONSE_CLOSE) {
+	value = 0;
     }
+    else if (res == GTK_RESPONSE_ACCEPT) {
+	value = 1;
+    }
+
+    gtk_widget_destroy(confirm_dialog);
+    return value;
 }
 
-char *name_from_address(const char *address) {
+void close_tab(GtkWidget *button, gpointer data) {
+    int pg_num = gtk_notebook_page_num(GTK_NOTEBOOK(notebook), data);
+    int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+    int close = 0;
+    
+    if (gtk_text_buffer_get_modified(book[pg_num].buff)) {
+	close = close_file_confirmation(pg_num);
+
+	switch (close) {
+	case 0:
+            gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), pg_num);
+            for (int i = pg_num; i < limit; i++) {
+                book[i] = book[i+1];
+		break;
+	    }
+	    order--;
+	case 1:
+	    save_as_dialog();
+	    break;
+	default:
+	    break;
+	}
+    }
+}
+char *name_from_address(char *address) {
     const char *slash = strrchr(address, '/');
     return slash ? g_strdup(slash + 1) : g_strdup(address);
 }
 
-void add_tab(char *address) {
-    if (order >= SIZE) {
-        g_print("Maximum number of tabs reached!\n");
-        return;
+void add_tab (char *address) {
+    int pg_num = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+    if (pg_num == SIZE) {
+	return;
     }
+	GtkWidget *text = gtk_label_new(address);
+	GtkWidget *label = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+	GtkWidget *button = gtk_button_new_with_label("x");
+	gtk_widget_set_tooltip_text(button, "Close Tab");
 
-    GtkWidget *label = gtk_label_new(NULL);
-    GtkWidget *tab_label = gtk_label_new(name_from_address(address));
-    GtkWidget *close_button = gtk_button_new_with_label("x");
-    gtk_widget_set_tooltip_text(close_button, "Close tab");
+	GtkWidget *textview = gtk_text_view_new();
 
-    GtkWidget *scrollwin = gtk_scrolled_window_new(NULL, NULL);
-    book[order].textview = gtk_text_view_new();
-    book[order].buff = gtk_text_view_get_buffer(GTK_TEXT_VIEW(book[order].textview));
-    book[order].saved = FALSE;
+	book[pg_num].text = gtk_label_new(name_from_address(address));
+	book[pg_num].address  = gtk_label_new(address);
+	book[pg_num].buff = gtk_text_view_get_buffer(GTK_TEXT_VIEW(textview));
+	
+        gtk_box_pack_start(GTK_BOX(label), book[pg_num].text, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(label), book[pg_num].address, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(label), button, FALSE, FALSE, 0);
+	
+	GtkWidget *scrollwindow = gtk_scrolled_window_new(NULL,NULL);
+	gtk_container_add(GTK_CONTAINER(scrollwindow), textview);
 
-    GtkWidget *tab_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-    gtk_box_pack_start(GTK_BOX(tab_box), tab_label, TRUE, TRUE, 0);
-    gtk_box_pack_start(GTK_BOX(tab_box), close_button, FALSE, FALSE, 0);
-    
-    gtk_container_add(GTK_CONTAINER(scrollwin), book[order].textview);
-    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrollwin, tab_box);
-
-    g_signal_connect(close_button, "clicked", G_CALLBACK(close_tab), scrollwin);
-
-    gtk_widget_show_all(tab_box);
-    gtk_widget_show_all(scrollwin);
-    order++;
-}
+	gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrollwindow, label);
+	
+	g_signal_connect(GTK_WIDGET(button), "clicked", 
+			 G_CALLBACK(close_tab),scrollwindow);
+	
+	gtk_widget_show(button);
+	gtk_widget_show(book[pg_num].text);
+	gtk_widget_show_all(scrollwindow);
+	order++;
+					      }
 
 void button_click(GtkWidget *widget, gpointer data) {
     const char *btn = (char*)data;
