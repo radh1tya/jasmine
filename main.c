@@ -90,24 +90,23 @@ void open_file_dialog() {
 
 int close_file_confirmation (int pg_num) {
     GtkDialogFlags flags = GTK_DIALOG_MODAL;
-    int res;
     GtkWidget *confirm_dialog = gtk_message_dialog_new(NULL, flags,
 						       GTK_MESSAGE_WARNING,
 						       GTK_BUTTONS_NONE,
 						       "Closing Unsaved Document");
     gtk_dialog_add_buttons(GTK_DIALOG(confirm_dialog), "Close and Discard",
 			   GTK_RESPONSE_CLOSE,
-			   "Saved and Close",
+			   "Save and Close",
 			   GTK_RESPONSE_ACCEPT,
 			   "Cancel",
 			   GTK_RESPONSE_CANCEL,
 			   NULL);
-    res = gtk_dialog_run(GTK_DIALOG(confirm_dialog));
+    int res = gtk_dialog_run(GTK_DIALOG(confirm_dialog));
     int value = 2;
     if(res == GTK_RESPONSE_CLOSE) {
 	value = 0;
     }
-    else if (res == GTK_RESPONSE_ACCEPT) {
+   if (res == GTK_RESPONSE_ACCEPT) {
 	value = 1;
     }
 
@@ -120,7 +119,7 @@ void close_tab(GtkWidget *button, gpointer data) {
     int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
     int close = 0;
     
-    if (gtk_text_buffer_get_modified(book[pg_num].buff)) {
+    if (gtk_text_buffer_get_modified(book[pg_num].buff))
 	close = close_file_confirmation(pg_num);
 
 	switch (close) {
@@ -128,16 +127,15 @@ void close_tab(GtkWidget *button, gpointer data) {
             gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), pg_num);
             for (int i = pg_num; i < limit; i++) {
                 book[i] = book[i+1];
-		break;
 	    }
 	    order--;
+break;
 	case 1:
 	    save_as_dialog();
 	    break;
 	default:
 	    break;
 	}
-    }
 }
 char *name_from_address(char *address) {
     const char *slash = strrchr(address, '/');
@@ -179,7 +177,7 @@ void add_tab (char *address) {
 					      }
 
 void button_click(GtkWidget *widget, gpointer data) {
-    const char *btn = (char*)data;
+char *btn = (char*)data;
 
     if(strcmp(btn, "New") == 0) {
         char *tab_name = g_strdup_printf("new_tab %d", order);
