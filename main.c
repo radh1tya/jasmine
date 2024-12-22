@@ -67,6 +67,19 @@ char* name_from_address(char *address) {
 
 
 void write_file (SaveAsType type) {
+	GtkTextIter start, end;
+	int pg_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+	gtk_text_buffer_get_start_iter(book[pg_num].buff, &start);
+	gtk_text_buffer_get_end_iter(book[pg_num].buff, &end);
+	const char * file = gtk_text_buffer_get_text(book[pg_num].buff, &start, &end, FALSE);
+
+	const char *filename = gtk_label_get_text(GTK_LABEL(book[pg_num].address));
+	if (!g_file_set_contents(filename, file, -1, NULL)) {
+    g_print("write failed");
+    return;
+}
+   
+	gtk_text_buffer_set_modified(book[pg_num].buff, FALSE);	
 	if(type == SAVE_AND_CLOSE) {
 		
 		int pg_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
@@ -76,13 +89,9 @@ void write_file (SaveAsType type) {
 		for(int i = pg_num; i < limit; i++) {
 			book[i] = book[i+1];
 			order--;
-		}
-	}
-		else {
-			g_print("save and continue");
+			}
+			}
 }
-}
-
 void save_file(SaveAsType type) {
 	int pg_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
 	const char *addrss = gtk_label_get_text(GTK_LABEL(book[pg_num].address));
@@ -95,10 +104,10 @@ void save_file(SaveAsType type) {
 }
 
 void save_as_dialog(SaveAsType type) {
-    GtkWidget *save_dialog = gtk_file_chooser_dialog_new("Save File", NULL, 
-		    GTK_FILE_CHOOSER_ACTION_SAVE, 
-"Cancel", GTK_RESPONSE_CANCEL, 
-"Save", GTK_RESPONSE_ACCEPT, NULL);
+    GtkWidget *save_dialog = gtk_file_chooser_dialog_new(
+        "Save File", NULL, GTK_FILE_CHOOSER_ACTION_SAVE,
+        "Cancel", GTK_RESPONSE_CANCEL,
+        "Save", GTK_RESPONSE_ACCEPT, NULL);
 
     GtkFileChooser *chooser = GTK_FILE_CHOOSER(save_dialog);
     gtk_file_chooser_set_do_overwrite_confirmation(chooser, TRUE);
@@ -106,17 +115,24 @@ void save_as_dialog(SaveAsType type) {
     int res = gtk_dialog_run(GTK_DIALOG(save_dialog));
 
     if (res == GTK_RESPONSE_ACCEPT) {
-        char *file_address = gtk_file_chooser_get_filename(chooser);
+        char *addrss = gtk_file_chooser_get_filename(chooser);
+        int pg_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
+        
+        gtk_label_set_text(GTK_LABEL(book[pg_num].address), addrss);
+        gtk_label_set_text(GTK_LABEL(book[pg_num].text), name_from_address(addrss));
+
         write_file(type);
 
-        g_free(file_address);
+        g_free(addrss);
     }
+
     gtk_widget_destroy(save_dialog);
 }
 
+
 void open_file(char *address) {
-	GFile *file;
-	file = g_file_new_for_path(address);
+	//GFile *file;
+	//file = g_file_new_for_path(address);
 	char *file_buff;
 	gboolean check;
 	check = g_file_get_contents(address, &file_buff, NULL, NULL);
@@ -132,7 +148,7 @@ void open_file(char *address) {
 	}
 	
 	g_free(file_buff);
-	g_object_unref(file);
+	//g_object_unref(file);
 }
 
 
