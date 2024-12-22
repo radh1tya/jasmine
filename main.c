@@ -130,6 +130,18 @@ void save_as_dialog(SaveAsType type) {
 }
 
 
+void open_failed(char *address) {
+	GtkDialogFlags flags = GTK_DIALOG_MODAL;
+	GtkWidget *warning_dialog;
+	int res;
+	warning_dialog = gtk_message_dialog_new(NULL,flags,
+			GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+			"Could not Open File\n%s",address
+			);
+	res = gtk_dialog_run(GTK_DIALOG(warning_dialog));
+	gtk_widget_destroy(warning_dialog);
+}
+
 void open_file(char *address) {
 	//GFile *file;
 	//file = g_file_new_for_path(address);
