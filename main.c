@@ -66,6 +66,18 @@ char* name_from_address(char *address) {
 }
 
 
+void write_failed(const char * address) {
+	GtkDialogFlags flags = GTK_DIALOG_MODAL;
+	GtkWidget *warning_dialog;
+	int res;
+	warning_dialog = gtk_message_dialog_new(NULL,flags,
+			GTK_MESSAGE_WARNING, GTK_BUTTONS_OK,
+			"Could not Open File\n%s",address
+			);
+	res = gtk_dialog_run(GTK_DIALOG(warning_dialog));
+	gtk_widget_destroy(warning_dialog);
+}
+
 void write_file (SaveAsType type) {
 	GtkTextIter start, end;
 	int pg_num = gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
@@ -74,9 +86,10 @@ void write_file (SaveAsType type) {
 	const char * file = gtk_text_buffer_get_text(book[pg_num].buff, &start, &end, FALSE);
 
 	const char *filename = gtk_label_get_text(GTK_LABEL(book[pg_num].address));
+
 	if (!g_file_set_contents(filename, file, -1, NULL)) {
-    g_print("write failed");
-    return;
+		write_failed(filename);
+		return;
 }
    
 	gtk_text_buffer_set_modified(book[pg_num].buff, FALSE);	
@@ -156,7 +169,7 @@ void open_file(char *address) {
 	} 
 	
 	else {
-		g_print("open failed");
+		open_failed(address);
 	}
 	
 	g_free(file_buff);
@@ -272,6 +285,43 @@ void add_tab(char *name, char *address) {
     
     order++;
 }
+gboolean delete_event (GtkWidget *window, GdkEvent *event, gpointer data) {
+	int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+	if(limit > 0) {
+		int i;
+		for(i=limit; i>0; i--) {
+			gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), i-1);
+			close_tab(NULL,NULL);
+		}
+	}
+	limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+
+	if(limit > 0) {
+		return TRUE;
+	} else {
+		free(book);
+		return FALSE;
+	}
+}
+
+gboolean delete_tabs () {
+	int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+	if(limit > 0) {
+		int i;
+		for(i=limit; i>0; i--) {
+			gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), i-1);
+			close_tab(NULL,NULL);
+		}
+	}
+	limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
+
+	if(limit > 0) {
+		return TRUE;
+	} else {
+		free(book);
+		return FALSE;
+	}
+}
 
 void button_click(GtkWidget *widget, gpointer data) {
 char *btn = (char*)data;
@@ -288,7 +338,13 @@ char *btn = (char*)data;
         save_file(SAVE_AND_CONTINUE); 
     } else if(strcmp(btn, "Save As") == 0) {
         save_as_dialog(SAVE_AND_CONTINUE);
-    }
+    } else if(strcmp(btn, "Close") == 0) {
+	    close_tab (NULL, NULL);
+    } else if(strcmp(btn, "Quit") == 0) {
+	    if (! delete_tabs()) {
+		    gtk_main_quit();
+	    }
+    } 
 }
 
 void make_notebook(GtkWidget *vbox) {
@@ -321,9 +377,9 @@ void make_window() {
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
     gtk_window_set_default_size(GTK_WINDOW(window), 400, 400);
     gtk_window_set_title(GTK_WINDOW(window), "Jasmine");
-
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close_window), NULL);
-
+    
+    g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_event), NULL);
+    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_container_add(GTK_CONTAINER(window), vbox);
     make_menu(vbox);
     make_notebook(vbox);
