@@ -79,7 +79,7 @@ void larger_text() {
 		sprintf(num, "%d", book[pg].size);
 		char name[8] = "size_";
 		strncat(name, num, 3);
-		gtk_widget_set_name(book[pg].view, name);
+		gtk_widget_set_name(book[pg].text, name);
 		g_print("%s\n", name);
 	}
 	//gtk_widget_set_name(book[pg].view, "size_32");
@@ -478,6 +478,7 @@ int main(int argc, char *argv[]) {
     }
 
     gtk_init(&argc, &argv);
+    make_css();
     make_window();
     gtk_main();
     return 0;
