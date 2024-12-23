@@ -72,7 +72,12 @@ int current_tab () {
 	
 }
 
-void cur_test() {
+void paste_text() {
+	int pg = current_tab();
+	gtk_text_buffer_paste_clipboard(book[pg].buff, clipboard, NULL, TRUE);
+
+}
+void cut_copy_delete (int type) {
 	gboolean check;
 	int pg = current_tab();
 	check = gtk_text_buffer_get_has_selection(book[pg].buff);
@@ -80,6 +85,20 @@ void cur_test() {
 		return;
 	}
 	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+
+	switch (type) {
+	case 1:
+		gtk_text_buffer_cut_clipboard(book[pg].buff, clipboard, TRUE);
+		break;
+	case 2:
+		gtk_text_buffer_copy_clipboard(book[pg].buff, clipboard);
+		break;
+	case 3:
+		gtk_text_buffer_delete_selection(book[pg].buff, TRUE, TRUE);
+		break;
+	default:
+		break;
+	}
 	gtk_text_buffer_cut_clipboard(book[pg].buff, clipboard, TRUE);
 
 }
@@ -365,7 +384,15 @@ char *btn = (char*)data;
 	    if (! delete_tabs()) {
 		    gtk_main_quit();
 	    }
-    } 
+    } else if(strcmp(btn, "Copy") == 0) {
+	    cut_copy_delete(2);
+    } else if(strcmp(btn, "Cut") == 0) {
+	    cut_copy_delete(1);
+    } else if(strcmp(btn, "Delete") == 0) {
+	    cut_copy_delete(3);
+    } else if(strcmp(btn, "Paste") == 0) {
+	    paste_text();
+    }
 }
 
 void make_notebook(GtkWidget *vbox) {
