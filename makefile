@@ -4,8 +4,21 @@ PKG = pkg-config --libs --cflags $(GTK)
 GTK = gtk+-3.0
 OUTPUT = jasmine
 
-install:
-	$(CC) $(INPUT) -o $(OUTPUT) `$(PKG)`
+all: $(OUTPUT)
 
-remove:
-	$(CC) $(OUTPUT)
+$(OUTPUT): $(INPUT)
+    $(CC) $(INPUT) -o $(OUTPUT) `$(PKG)`
+
+configure:
+    @echo "ga perlu configure"
+
+clean:
+    rm -f $(OUTPUT)
+
+check:
+    @echo "ga perlu check"
+
+distcheck:
+    @echo "ga perlu distcheck"
+
+.PHONY: all install clean check distcheck configure
