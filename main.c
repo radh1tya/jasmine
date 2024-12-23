@@ -6,7 +6,9 @@
 typedef struct Pages{
     GtkWidget *text;
     GtkWidget *address;
+    GtkWidget *view;
     GtkTextBuffer *buff;
+    int size;
 } PgID;
 
 typedef struct {
@@ -28,6 +30,7 @@ void add_tab(char *name, char *address);
 char* name_from_address(char *address);
 void save_as_dialog(SaveAsType type);
 gboolean delete_tabs ();
+int current_tab ();
 
 PgID *book;
 
@@ -67,6 +70,20 @@ char* name_from_address(char *address) {
 	return ch;
 }
 
+void larger_text() {
+	int pg = current_tab();
+
+	if(book[pg].size < 30) {
+		book[pg].size+=5;
+		char num[3];
+		sprintf(num, "%d", book[pg].size);
+		char name[8] = "size_";
+		strncat(name, num, 3);
+		gtk_widget_set_name(book[pg].view, name);
+		g_print("%s\n", name);
+	}
+	//gtk_widget_set_name(book[pg].view, "size_32");
+}
 int current_tab () {
 	return gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
 	
@@ -99,8 +116,6 @@ void cut_copy_delete (int type) {
 	default:
 		break;
 	}
-	gtk_text_buffer_cut_clipboard(book[pg].buff, clipboard, TRUE);
-
 }
 void write_failed(const char * address) {
 	GtkDialogFlags flags = GTK_DIALOG_MODAL;
@@ -292,9 +307,12 @@ void add_tab(char *name, char *address) {
         return;
     }
 
+    book[pg].size = 15;
     book[pg].buff = gtk_text_buffer_new(NULL); 
     book[pg].text = gtk_text_view_new_with_buffer(book[pg].buff);
     book[pg].address = gtk_label_new(address);
+
+    gtk_widget_set_name(book[pg].text, "size_15");
     gtk_widget_set_hexpand(book[pg].text, TRUE);
     gtk_widget_set_vexpand(book[pg].text, TRUE);
 
@@ -303,13 +321,15 @@ void add_tab(char *name, char *address) {
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
 
     GtkWidget *name_label = gtk_label_new(name);
+    
     gtk_box_pack_start(GTK_BOX(label), name_label, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(label), book[pg].address, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(label), button, FALSE, FALSE, 0);
 
     GtkWidget *scrollwindow = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwindow), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
-    gtk_container_add(GTK_CONTAINER(scrollwindow), book[pg].text);
+
+    gtk_container_add(GTK_CONTAINER(scrollwindow), book[pg].text); 
 
     gtk_widget_show_all(label);
     gtk_widget_show_all(scrollwindow);
@@ -317,10 +337,13 @@ void add_tab(char *name, char *address) {
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrollwindow, label);
     gtk_notebook_set_current_page(GTK_NOTEBOOK(notebook), pg);
 
+    gtk_widget_grab_focus(book[pg].view);
     g_signal_connect(button, "clicked", G_CALLBACK(close_tab), GINT_TO_POINTER(pg));
     
     order++;
 }
+
+
 gboolean delete_event (GtkWidget *window, GdkEvent *event, gpointer data) {
 	/*
 	int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(no
@@ -392,9 +415,22 @@ char *btn = (char*)data;
 	    cut_copy_delete(3);
     } else if(strcmp(btn, "Paste") == 0) {
 	    paste_text();
+    } else if(strcmp(btn, "Larger Text") == 0) {
+	    larger_text();
     }
 }
 
+void make_css() {
+	GtkCssProvider *provider;
+	provider = gtk_css_provider_new();
+	GdkDisplay *display = gdk_display_get_default();
+	GdkScreen *screen = gdk_display_get_default_screen(display);
+	gtk_style_context_add_provider_for_screen(screen, GTK_STYLE_PROVIDER(provider), GTK_STYLE_PROVIDER_PRIORITY_USER);
+
+	gtk_css_provider_load_from_path(GTK_CSS_PROVIDER(provider), "./css_size.css", NULL);
+	g_print("Css bisa diload\n");
+
+}
 void make_notebook(GtkWidget *vbox) {
     notebook = gtk_notebook_new();
     gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
