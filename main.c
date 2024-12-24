@@ -33,6 +33,7 @@ GtkWidget *hbox_1;
 GtkWidget *hbox_2;
 GtkClipboard *clipboard;
 GtkEntryBuffer *search_buff;
+GtkTextTag *search_tag;
 
 void add_tab(char *name, char *address);
 char* name_from_address(char *address);
@@ -74,7 +75,26 @@ void close_window() {
 }
 
 void search_text() {
+g_print("something hapened"); // untuk debug gan
+int pg = current_tab();
+GtkTextIter start, end;
+gtk_text_buffer_get_start_iter(book[pg].buff, &start);
+gtk_text_buffer_get_end_iter(book[pg].buff, &start);
+gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
+end = start;
+const char *word = gtk_entry_buffer_get_text(search_buff);
+
+gboolean check;
+GtkTextSearchFlags flag = GTK_TEXT_SEARCH_CASE_INSENSITIVE;
+while(1) {
+	check = gtk_text_iter_forward_search(&end, word, flag, &start, &end, NULL);
+	if (!check) {
+		break;
+	}
+	gtk_text_buffer_apply_tag(book[pg].buff,search_tag,&start,&end);
 }
+}
+
 void delete_text (GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
 	search_text();
 }
@@ -378,7 +398,12 @@ void add_tab(char *name, char *address) {
     gtk_button_set_relief(GTK_BUTTON(button), GTK_RELIEF_NONE);
 
     GtkWidget *name_label = gtk_label_new(name);
-    
+
+    GtkTextTagTable *table;
+    table = gtk_text_buffer_get_tag_table(book[pg].buff);
+    gtk_text_buffer_create_tag(book[pg].buff, "green", "background", "#2c5d30", NULL); 
+    search_tag = gtk_text_tag_table_lookup(table, "green");
+
     gtk_box_pack_start(GTK_BOX(label), name_label, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(label), book[pg].address, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(label), button, FALSE, FALSE, 0);
@@ -520,45 +545,6 @@ void make_menu(GtkWidget *menubox) {
 }
 
 void make_search(GtkWidget *box) {
-	GtkWidget *label;
-	label = gtk_label_new("Replace With:");
-	GtkWidget *field = gtk_entry_new();
-	GtkWidget *replace = gtk_button_new_with_label("Replace");
-	gtk_widget_set_size_request(replace, 91, 0);
-	GtkWidget *replace_all = gtk_button_new_with_label("Replace All");
-	GtkWidget *close = gtk_button_new_with_label("x");
-	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), replace, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), replace_all, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
-
-	search_buff = gtk_entry_get_buffer(GTK_ENTRY(field));
-
-	gtk_widget_set_name(replace, "replace-button");
-
-	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "inserted-text", G_CALLBACK(insert_text), NULL);
-
-	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "deleted-text", G_CALLBACK(delete_text), NULL);
-
-	GtkWidget *next = gtk_button_new_with_label("Next");
-	GtkWidget *previous = gtk_button_new_with_label("Previous");
-	GtkWidget *caps = gtk_toggle_button_new_with_label("Aa");
-	GtkWidget *word = gtk_toggle_button_new_with_label("\"\"");
-	
-	gtk_box_pack_start(GTK_BOX(box), caps, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), word, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), close, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), previous, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), next, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), field, FALSE, FALSE, 0);
-
-
-	g_signal_connect(GTK_WIDGET(close), "Clicked", G_CALLBACK(hide_search), NULL);
-
-}
-
-void make_replace(GtkWidget *box) {
 	GtkWidget *caps = gtk_toggle_button_new_with_label("Aa");
 	GtkWidget *word = gtk_toggle_button_new_with_label("\"\"");
 	GtkWidget *label = gtk_label_new("Search For: ");
@@ -567,13 +553,38 @@ void make_replace(GtkWidget *box) {
 	GtkWidget *previous = gtk_button_new_with_label("Previous");
 	GtkWidget *close = gtk_button_new_with_label("x");
 
+	search_buff = gtk_entry_get_buffer(GTK_ENTRY(field));
+
+	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "insered-text",
+			G_CALLBACK(insert_text), NULL);
+
+	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "deleted-text",
+			G_CALLBACK(delete_text), NULL);
+
 	gtk_box_pack_start(GTK_BOX(box), caps, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(box), word, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
 	gtk_box_pack_end(GTK_BOX(box), close, FALSE, FALSE, 0);
 	gtk_box_pack_end(GTK_BOX(box), previous, FALSE, FALSE, 0);
 	gtk_box_pack_end(GTK_BOX(box), next, FALSE, FALSE, 0);
-	gtk_box_pack_end(GTK_BOX(box), field, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
+
+	g_signal_connect(GTK_WIDGET(close), "clicked", G_CALLBACK(hide_search), NULL);
+}
+
+void make_replace(GtkWidget *box) {
+	GtkWidget *label = gtk_label_new("Replace With: ");
+	GtkWidget *field = gtk_entry_new();
+	GtkWidget *replace = gtk_button_new_with_label("Replace");
+	gtk_widget_set_size_request(replace, 91, 0);
+	
+	GtkWidget *replace_all = gtk_button_new_with_label("Replace All");
+	GtkWidget *close = gtk_button_new_with_label("x");
+
+	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), replace, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), replace_all, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
 
 
 }
