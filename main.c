@@ -40,6 +40,7 @@ char* name_from_address(char *address);
 void save_as_dialog(SaveAsType type);
 gboolean delete_tabs ();
 int current_tab ();
+void search_text();
 
 PgID *book;
 
@@ -74,6 +75,23 @@ void close_window() {
     gtk_main_quit();
 }
 
+gboolean get_whole_word(GtkToggleButton *button) {
+	static gboolean enabled;
+	if(button) {
+		enabled = gtk_toggle_button_get_active(button);
+		search_text();
+	}
+	return enabled;
+}
+
+gboolean get_case_sensitive(GtkToggleButton *button) {
+	static gboolean enabled;
+	if(button) {
+		enabled = gtk_toggle_button_get_active(button);
+		search_text();
+	}
+	return enabled;
+}
 void search_text() {
 	g_print("something hapened"); // untuk debug gan
 
@@ -91,6 +109,9 @@ const char *word = gtk_entry_buffer_get_text(search_buff);
 
 gboolean check;
 GtkTextSearchFlags flag = GTK_TEXT_SEARCH_CASE_INSENSITIVE;
+	if (get_case_sensitive(NULL)) {
+		flag = GTK_TEXT_SEARCH_VISIBLE_ONLY;
+	}
 while(1) {
 	check = gtk_text_iter_forward_search(&end, word, flag, &start, &end, NULL);
 	if (!check) {
@@ -580,6 +601,8 @@ void make_search(GtkWidget *box) {
 	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
 
 	g_signal_connect(GTK_WIDGET(close), "clicked", G_CALLBACK(hide_search), NULL);
+	g_signal_connect(GTK_WIDGET(caps), "toggled", G_CALLBACK(get_case_sensitive), NULL);
+	g_signal_connect(GTK_WIDGET(word), "toggled", G_CALLBACK(get_whole_word), NULL);
 }
 
 void make_replace(GtkWidget *box) {
