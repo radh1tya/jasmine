@@ -32,6 +32,7 @@ GtkWidget *notebook;
 GtkWidget *hbox_1;
 GtkWidget *hbox_2;
 GtkClipboard *clipboard;
+GtkEntryBuffer *search_buff;
 
 void add_tab(char *name, char *address);
 char* name_from_address(char *address);
@@ -72,13 +73,34 @@ void close_window() {
     gtk_main_quit();
 }
 
+void search_text() {
+}
+void delete_text (GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
+	search_text();
+}
+
+void insert_text(GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
+	search_text();
+}
 void search() {
+	GtkTextIter start, end;
 	gtk_widget_show_all(hbox_1);
 	gtk_widget_hide(hbox_2);
+
+	gboolean check;
+	int pg = current_tab();
+	check = gtk_text_buffer_get_has_selection(book[pg].buff);
+
+	if(check) {
+	gtk_text_buffer_get_selection_bounds(book[pg].buff, &start, &end);
+	const char *select = gtk_text_buffer_get_text(book[pg].buff, &start, &end, FALSE);
+	gtk_entry_buffer_set_text(search_buff, select, -1);
+	}
+
 }
 
 void replace() {
-	gtk_widget_show_all(hbox_1);
+	search();
 	gtk_widget_show_all(hbox_2);
 }
 
@@ -510,7 +532,30 @@ void make_search(GtkWidget *box) {
 	gtk_box_pack_end(GTK_BOX(box), replace_all, FALSE, FALSE, 0);
 	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
 
+	search_buff = gtk_entry_get_buffer(GTK_ENTRY(field));
+
+	gtk_widget_set_name(replace, "replace-button");
+
+	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "inserted-text", G_CALLBACK(insert_text), NULL);
+
+	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "deleted-text", G_CALLBACK(delete_text), NULL);
+
+	GtkWidget *next = gtk_button_new_with_label("Next");
+	GtkWidget *previous = gtk_button_new_with_label("Previous");
+	GtkWidget *caps = gtk_toggle_button_new_with_label("Aa");
+	GtkWidget *word = gtk_toggle_button_new_with_label("\"\"");
+	
+	gtk_box_pack_start(GTK_BOX(box), caps, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), word, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), close, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), previous, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), next, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), field, FALSE, FALSE, 0);
+
+
 	g_signal_connect(GTK_WIDGET(close), "Clicked", G_CALLBACK(hide_search), NULL);
+
 }
 
 void make_replace(GtkWidget *box) {
