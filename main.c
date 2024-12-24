@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <gtk-3.0/gtk/gtk.h>
+#include <ctype.h>
 
 typedef struct Pages{
     GtkWidget *text;
@@ -96,7 +97,7 @@ void search_text() {
 	g_print("something hapened"); // untuk debug gan
 
 	int pg = current_tab();
-	GtkTextIter start, end;
+	GtkTextIter start, end, iter;
 
 	gtk_text_buffer_get_start_iter(book[pg].buff, &start);
 
@@ -112,12 +113,33 @@ GtkTextSearchFlags flag = GTK_TEXT_SEARCH_CASE_INSENSITIVE;
 	if (get_case_sensitive(NULL)) {
 		flag = GTK_TEXT_SEARCH_VISIBLE_ONLY;
 	}
+
 while(1) {
+	char temp;
 	check = gtk_text_iter_forward_search(&end, word, flag, &start, &end, NULL);
 	if (!check) {
 		break;
 	}
+
+	if (get_whole_word(NULL)) {
+	iter = start;
+	if ( ! gtk_text_iter_starts_line) {
+		gtk_text_iter_backward_cursor_position(&iter);
+		temp = gtk_text_iter_get_char(&iter);
+		if( temp == '_' || isalnum(temp)) {
+			check = FALSE;
+		}
+		if (! gtk_text_iter_ends_line(&end)){
+				temp = gtk_text_iter_get_char(&end);
+				if(temp == '_' || isalnum(temp)) {
+				check = FALSE;
+				}
+				}
+	}
+	if (check) {
 	gtk_text_buffer_apply_tag(book[pg].buff,search_tag,&start,&end);
+	}
+}
 }
 }
 
@@ -156,6 +178,11 @@ void replace() {
 }
 
 void hide_search() {
+	int pg = current_tab();
+	GtkTextIter start, end, iter;
+	gtk_text_buffer_get_start_iter(book[pg].buff, &start);
+	gtk_text_buffer_get_end_iter(book[pg].buff, &end);
+	gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
 	gtk_widget_hide(hbox_1);
 	gtk_widget_hide(hbox_2);
 }
