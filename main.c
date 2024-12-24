@@ -29,6 +29,8 @@ typedef enum {
 }TextSize;
 
 GtkWidget *notebook;
+GtkWidget *hbox_1;
+GtkWidget *hbox_2;
 GtkClipboard *clipboard;
 
 void add_tab(char *name, char *address);
@@ -70,6 +72,20 @@ void close_window() {
     gtk_main_quit();
 }
 
+void search() {
+	gtk_widget_show_all(hbox_1);
+	gtk_widget_hide(hbox_2);
+}
+
+void replace() {
+	gtk_widget_show_all(hbox_1);
+	gtk_widget_show_all(hbox_2);
+}
+
+void hide_search() {
+	gtk_widget_hide(hbox_1);
+	gtk_widget_hide(hbox_2);
+}
 char* name_from_address(char *address) {
 	char *ch = g_path_get_basename(address);
 	return ch;
@@ -440,6 +456,10 @@ char *btn = (char*)data;
 	    text_size(TEXT_SMALLER);
     } else if(strcmp(btn, "Normal Size") == 0) {
 	    text_size(TEXT_NORMAL);
+    } else if(strcmp(btn, "Search") == 0) {
+	    search();
+    } else if(strcmp(btn, "Replace") == 0) {
+	    replace();
     }
 }
 
@@ -477,6 +497,42 @@ void make_menu(GtkWidget *menubox) {
     gtk_container_add(GTK_CONTAINER(menubox), menubar);
 }
 
+void make_search(GtkWidget *box) {
+	GtkWidget *label;
+	label = gtk_label_new("Replace With:");
+	GtkWidget *field = gtk_entry_new();
+	GtkWidget *replace = gtk_button_new_with_label("Replace");
+	gtk_widget_set_size_request(replace, 91, 0);
+	GtkWidget *replace_all = gtk_button_new_with_label("Replace All");
+	GtkWidget *close = gtk_button_new_with_label("x");
+	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), replace, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), replace_all, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), field, TRUE, TRUE, 0);
+
+	g_signal_connect(GTK_WIDGET(close), "Clicked", G_CALLBACK(hide_search), NULL);
+}
+
+void make_replace(GtkWidget *box) {
+	GtkWidget *caps = gtk_toggle_button_new_with_label("Aa");
+	GtkWidget *word = gtk_toggle_button_new_with_label("\"\"");
+	GtkWidget *label = gtk_label_new("Search For: ");
+	GtkWidget *field = gtk_entry_new();
+	GtkWidget *next = gtk_button_new_with_label("Next");
+	GtkWidget *previous = gtk_button_new_with_label("Previous");
+	GtkWidget *close = gtk_button_new_with_label("x");
+
+	gtk_box_pack_start(GTK_BOX(box), caps, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), word, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), close, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), previous, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), next, FALSE, FALSE, 0);
+	gtk_box_pack_end(GTK_BOX(box), field, FALSE, FALSE, 0);
+
+
+}
+
 void make_window() {
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -488,9 +544,26 @@ void make_window() {
     g_signal_connect(G_OBJECT(window), "delete-event", G_CALLBACK(delete_event), NULL);
     g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_container_add(GTK_CONTAINER(window), vbox);
+    
     make_menu(vbox);
     make_notebook(vbox);
+
+    GtkWidget *paned;
+    paned = gtk_paned_new(GTK_ORIENTATION_VERTICAL);
+    gtk_container_add(GTK_CONTAINER(vbox), paned);
+    hbox_1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    
+    hbox_2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_paned_pack1(GTK_PANED(paned), hbox_1, TRUE, FALSE);
+    gtk_paned_pack2(GTK_PANED(paned), hbox_2, TRUE, FALSE);
+
+    make_css();
+    
     gtk_widget_show_all(window);
+
+    make_search(hbox_1);
+    make_replace(hbox_2);
+    
 }
 
 int main(int argc, char *argv[]) {
@@ -501,7 +574,6 @@ int main(int argc, char *argv[]) {
     }
 
     gtk_init(&argc, &argv);
-    make_css();
     make_window();
     gtk_main();
     return 0;
