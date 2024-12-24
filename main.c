@@ -75,12 +75,16 @@ void close_window() {
 }
 
 void search_text() {
-g_print("something hapened"); // untuk debug gan
-int pg = current_tab();
-GtkTextIter start, end;
-gtk_text_buffer_get_start_iter(book[pg].buff, &start);
-gtk_text_buffer_get_end_iter(book[pg].buff, &start);
-gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
+	g_print("something hapened"); // untuk debug gan
+	int pg = current_tab();
+	GtkTextIter start, end;
+
+	gtk_text_buffer_get_start_iter(book[pg].buff, &start);
+
+	gtk_text_buffer_get_end_iter(book[pg].buff, &start);
+
+	gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
+
 end = start;
 const char *word = gtk_entry_buffer_get_text(search_buff);
 
@@ -96,11 +100,16 @@ while(1) {
 }
 
 void delete_text (GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
-	search_text();
+	
+	if(search_buff != NULL) {
+		search_text();
+	}
 }
 
 void insert_text(GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
-	search_text();
+	if( search_buff != NULL) {
+		search_text();
+	}
 }
 void search() {
 	GtkTextIter start, end;
@@ -355,9 +364,9 @@ void close_tab(GtkWidget *button, gpointer data) {
     int limit = gtk_notebook_get_n_pages(GTK_NOTEBOOK(notebook));
     int close = 0;
     
-    if (gtk_text_buffer_get_modified(book[pg].buff))
+    if (gtk_text_buffer_get_modified(book[pg].buff)) {
 	close = close_file_confirmation(pg);
-
+    }
 	switch (close) {
 	case 0:
             gtk_notebook_remove_page(GTK_NOTEBOOK(notebook), pg);
@@ -446,7 +455,7 @@ gboolean delete_event (GtkWidget *window, GdkEvent *event, gpointer data) {
 		return FALSE;
 	}
 	*/
-	return (delete_tabs());
+	return delete_tabs();
 }
 
 gboolean delete_tabs () {
@@ -503,7 +512,7 @@ char *btn = (char*)data;
 	    text_size(TEXT_SMALLER);
     } else if(strcmp(btn, "Normal Size") == 0) {
 	    text_size(TEXT_NORMAL);
-    } else if(strcmp(btn, "Search") == 0) {
+    } else if(strcmp(btn, "Find") == 0) {
 	    search();
     } else if(strcmp(btn, "Replace") == 0) {
 	    replace();
@@ -555,7 +564,7 @@ void make_search(GtkWidget *box) {
 
 	search_buff = gtk_entry_get_buffer(GTK_ENTRY(field));
 
-	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "insered-text",
+	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "inserted-text",
 			G_CALLBACK(insert_text), NULL);
 
 	g_signal_connect(GTK_ENTRY_BUFFER(search_buff), "deleted-text",
