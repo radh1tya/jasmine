@@ -22,6 +22,11 @@ typedef enum {
 	SAVE_AND_CONTINUE,
 }SaveAsType;
 
+typedef enum {
+	TEXT_LARGER,
+	TEXT_SMALLER,
+	TEXT_NORMAL
+}TextSize;
 
 GtkWidget *notebook;
 GtkClipboard *clipboard;
@@ -70,11 +75,27 @@ char* name_from_address(char *address) {
 	return ch;
 }
 
-void larger_text() {
+void text_size(TextSize txt_sz) {
 	int pg = current_tab();
-
-	if(book[pg].size < 30) {
-		book[pg].size+=5;
+	int sz = book[pg].size;
+	switch (txt_sz) {
+		case TEXT_LARGER:
+			if (sz < 40) {
+				sz+=5;
+			}
+			break;
+		case TEXT_SMALLER:
+			if (sz > 5) {
+				sz-=5;
+			}
+			break;
+		case TEXT_NORMAL:
+			sz = 15;
+			break;
+		default:
+			break;
+	}
+		book[pg].size=sz;
 		char num[3];
 		sprintf(num, "%d", book[pg].size);
 		char name[8] = "size_";
@@ -82,8 +103,6 @@ void larger_text() {
 		gtk_widget_set_name(book[pg].text, name);
 		g_print("%s\n", name);
 	}
-	//gtk_widget_set_name(book[pg].view, "size_32");
-}
 int current_tab () {
 	return gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook));
 	
@@ -416,7 +435,11 @@ char *btn = (char*)data;
     } else if(strcmp(btn, "Paste") == 0) {
 	    paste_text();
     } else if(strcmp(btn, "Larger Text") == 0) {
-	    larger_text();
+	    text_size(TEXT_LARGER);
+    } else if(strcmp(btn, "Smaller Text") == 0) {
+	    text_size(TEXT_SMALLER);
+    } else if(strcmp(btn, "Normal Size") == 0) {
+	    text_size(TEXT_NORMAL);
     }
 }
 
