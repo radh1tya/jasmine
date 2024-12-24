@@ -35,6 +35,7 @@ GtkWidget *hbox_2;
 GtkClipboard *clipboard;
 GtkEntryBuffer *search_buff;
 GtkTextTag *search_tag;
+gboolean searching = FALSE;
 
 void add_tab(char *name, char *address);
 char* name_from_address(char *address);
@@ -42,6 +43,7 @@ void save_as_dialog(SaveAsType type);
 gboolean delete_tabs ();
 int current_tab ();
 void search_text();
+void key_release(GtkWidget *widget, GdkEventKey *event, gpointer data);
 
 PgID *book;
 
@@ -94,9 +96,11 @@ gboolean get_case_sensitive(GtkToggleButton *button) {
 	return enabled;
 }
 void search_text() {
+	int count = 0;
 	g_print("something hapened"); // untuk debug gan
-
+	
 	int pg = current_tab();
+
 	GtkTextIter start, end, iter;
 
 	gtk_text_buffer_get_start_iter(book[pg].buff, &start);
@@ -105,6 +109,10 @@ void search_text() {
 
 	gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
 
+	if(gtk_entry_buffer_get_length(search_buff) == 0) {
+		return;
+	}
+	
 end = start;
 const char *word = gtk_entry_buffer_get_text(search_buff);
 
@@ -123,7 +131,7 @@ while(1) {
 
 	if (get_whole_word(NULL)) {
 	iter = start;
-	if ( ! gtk_text_iter_starts_line) {
+	if ( ! gtk_text_iter_starts_line(&iter)) {
 		gtk_text_iter_backward_cursor_position(&iter);
 		temp = gtk_text_iter_get_char(&iter);
 		if( temp == '_' || isalnum(temp)) {
@@ -138,9 +146,11 @@ while(1) {
 	}
 	if (check) {
 	gtk_text_buffer_apply_tag(book[pg].buff,search_tag,&start,&end);
+	count++;
 	}
 }
 }
+g_print("count = %d\n", count);
 }
 
 void delete_text (GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpointer data) {
@@ -156,6 +166,7 @@ void insert_text(GtkEntryBuffer *buffer, guint pos, gchar *txt, guint n_txt, gpo
 	}
 }
 void search() {
+	searching = TRUE;
 	GtkTextIter start, end;
 	gtk_widget_show_all(hbox_1);
 	gtk_widget_hide(hbox_2);
@@ -583,6 +594,8 @@ void make_notebook(GtkWidget *vbox) {
     notebook = gtk_notebook_new();
     gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
     add_tab("Unsaved Document", "");
+
+    g_signal_connect(GTK_WIDGET(notebook), "key_release_event", G_CALLBACK(key_release), NULL);
 }
 
 void make_menu(GtkWidget *menubox) {
@@ -649,6 +662,11 @@ void make_replace(GtkWidget *box) {
 
 }
 
+void key_release(GtkWidget *widget, GdkEventKey *event, gpointer data) {
+	if(searching && gtk_entry_buffer_get_length(search_buff) > 0) {
+		search_text();
+	}
+}
 void make_window() {
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
