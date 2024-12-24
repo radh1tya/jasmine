@@ -76,12 +76,13 @@ void close_window() {
 
 void search_text() {
 	g_print("something hapened"); // untuk debug gan
+
 	int pg = current_tab();
 	GtkTextIter start, end;
 
 	gtk_text_buffer_get_start_iter(book[pg].buff, &start);
 
-	gtk_text_buffer_get_end_iter(book[pg].buff, &start);
+	gtk_text_buffer_get_end_iter(book[pg].buff, &end);
 
 	gtk_text_buffer_remove_tag(book[pg].buff, search_tag, &start, &end);
 
